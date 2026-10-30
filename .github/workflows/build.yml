@@ -1,0 +1,37 @@
+
+name: Build TaLaVie Guitare VST3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure project
+        run: cmake -B build -S . -A x64
+
+      - name: Build VST3
+        run: cmake --build build --config Release --target TaLaVieGuitare_VST3
+
+      - name: Package VST3
+        shell: pwsh
+        run: |
+          $plugin = Get-ChildItem build -Directory -Recurse -Filter "TaLaVie Guitare.vst3" | Select-Object -First 1
+          if (-not $plugin) { throw "Plugin VST3 introuvable" }
+          Compress-Archive -Path $plugin.FullName -DestinationPath "TaLaVie-Guitare-VST3.zip"
+
+      - name: Upload VST3 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaLaVie-Guitare-VST3
+          path: TaLaVie-Guitare-VST3.zip
